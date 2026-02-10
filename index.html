@@ -8,6 +8,10 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
 <style>
   body {
@@ -223,17 +227,37 @@
 
 <div id="app-content" class="hidden">
 
-<header>
-  <div class="title-left">
-    <div class="title-part1">EOMMA'S</div>
-    <div class="title-part2">Management System</div>
+<header style="position: relative; display: flex; align-items: center; padding: 10px 20px; background: white;">
+
+  <!-- Left side: Title -->
+  <div class="title-left" style="flex:1; display: flex; flex-direction: column;">
+    <div class="title-part1" style="color: #963489; font-weight: bold; font-size: 1.2em;">EOMMA'S</div>
+    <div class="title-part2" style="font-weight: normal; font-size: 1em;">Management System</div>
   </div>
-  <div class="title-right" id="header-title">HOME</div>
-  <div class="menu-btn" id="menu-btn" aria-label="Menu Button" tabindex="0">
-    <div></div>
-    <div></div>
-    <div></div>
+  
+  <!-- Center: Page name -->
+  <div id="header-title" style="
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-weight: bold;
+    font-size: 1.2em;
+    white-space: nowrap;
+  ">
+    INVENTORY
   </div>
+
+  <!-- Right side: Download button and menu button -->
+  <div style="flex:1; display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
+
+    <div class="menu-btn" id="menu-btn" aria-label="Menu Button" tabindex="0" style="cursor: pointer; width: 30px; height: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div style="width: 100%; height: 3px; background-color: #963489;"></div>
+      <div style="width: 100%; height: 3px; background-color: #963489;"></div>
+      <div style="width: 100%; height: 3px; background-color: #963489;"></div>
+    </div>
+  </div>
+
+  <!-- Your existing menu nav here (can remain unchanged) -->
   <nav class="menu" id="menu" aria-label="Main Menu">
     <a href="#" data-title="HOME">Home</a>
     <a href="#" data-title="INVENTORY">Inventory</a>
@@ -525,7 +549,7 @@
 
             <div>
               <label for="add-employee-rate" class="block text-sm font-medium text-gray-700 mb-1">Hourly Rate (PHP)</label>
-              <input type="number" id="add-employee-rate" min="50.00" step="0.25" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="50.00" />
+              <input type="number" id="add-employee-rate" min="30.00" step="0.25" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="50.00" />
             </div>
           </div>
 
@@ -561,7 +585,7 @@
 
             <div>
               <label for="edit-employee-rate" class="block text-sm font-medium text-gray-700 mb-1">Hourly Rate (PHP)</label>
-              <input type="number" id="edit-employee-rate" min="50.00" step="0.25" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              <input type="number" id="edit-employee-rate" min="30.00" step="0.25" class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
             </div>
           </div>
 
@@ -739,6 +763,21 @@
 </div>
 
 <script>
+// Firebase configuration (replace with your actual config from Firebase Console)
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 const users = [
   { username: 'admin', password: 'password' }
 ];
@@ -764,37 +803,32 @@ function showLogin() {
   errorMsg.classList.add('hidden');
 }
 
-loginForm.addEventListener('submit', function(event) {
+loginForm.addEventListener('submit', async function(event) {
   event.preventDefault();
-  const username = document.getElementById('login-username').value.trim();
+  const email = document.getElementById('login-username').value.trim();  // Treat username as email
   const password = document.getElementById('login-password').value;
 
-  const validUser = users.find(user => user.username === username && user.password === password);
-
-  if (validUser) {
-    localStorage.setItem('loggedInUser', username);
-    showApp();
-  } else {
-    errorMsg.textContent = 'Invalid username or password.';
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    showApp();  // Your existing function to show the app
+  } catch (error) {
+    errorMsg.textContent = 'Invalid email or password.';
     errorMsg.classList.remove('hidden');
   }
 });
 
-// On page load check if already logged in
-document.addEventListener('DOMContentLoaded', () => {
-  if (isLoggedIn()) {
-    showApp();
+// Listen for auth state changes (handles auto-login and logout)
+auth.onAuthStateChanged(user => {
+  if (user) {
+    showApp();  // User is logged in
   } else {
-    showLogin();
+    showLogin();  // User is logged out
   }
 });
 
-// Log-Out button behavior
-const logoutBtn = document.getElementById('logout-btn');
 logoutBtn.addEventListener('click', () => {
-  localStorage.removeItem('loggedInUser');
-  // Optionally clear other stored data if needed
-  showLogin();
+  auth.signOut();  // Firebase sign out
+  showLogin();  // Your existing function
 });
     
   // Original menu and header logic
@@ -853,26 +887,42 @@ logoutBtn.addEventListener('click', () => {
   }
 });
 
-function updateHomepageSummaries() {
-  // For Inventory: sum total items in stock (simplified)
-  const inventoryRows = document.querySelectorAll('#inventoryTable tbody tr');
+async function updateHomepageSummaries() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  // Inventory: Fetch from Firestore
   let totalStock = 0;
-  inventoryRows.forEach(row => {
-    const quantityStock = parseInt(row.cells[3].querySelector('input').value) || 0;
-    totalStock += quantityStock;
-  });
+  try {
+    const invDoc = await db.collection('users').doc(user.uid).collection('inventory').doc('data').get();
+    if (invDoc.exists) {
+      const rows = invDoc.data().rows || [];
+      rows.forEach(row => {
+        const quantityStock = parseInt(row[3]?.value) || 0;  // Assuming index 3 is Quantity Stock
+        totalStock += quantityStock;
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching inventory for summary:', error);
+  }
   document.getElementById('summary-inventory').textContent = totalStock;
 
-  // For Payroll: use total payroll due today from your existing payroll variable or compute
-  const payrollDueEl = document.getElementById('payroll-due');
-  document.getElementById('summary-payroll').textContent = payrollDueEl ? payrollDueEl.textContent : 'PHP 0.00';
-
-  // For Income/Expense: use net profit today sum from your income/expense data
-  // Assuming you have a function or a variable netProfitToday
-  let netProfitToday = 0;
-  if (typeof getIncomeExpenseTodayNetProfit === 'function') {
-    netProfitToday = getIncomeExpenseTodayNetProfit();
+  // Payroll: Fetch from Firestore
+  let payrollDue = 0;
+  try {
+    const payDoc = await db.collection('users').doc(user.uid).collection('payroll').doc('data').get();
+    if (payDoc.exists) {
+      const data = payDoc.data();
+      // Calculate payroll due (reuse your logic from updateDashboardStats)
+      // ... (insert your payroll calculation code here, adapted to data.employees and data.timeRecords)
+      document.getElementById('summary-payroll').textContent = `PHP ${payrollDue.toFixed(2)}`;
+    }
+  } catch (error) {
+    console.error('Error fetching payroll for summary:', error);
   }
+
+  // Income/Expense: Fetch from Firestore
+  const netProfitToday = getIncomeExpenseTodayNetProfit();  // Your existing function, but ensure records is up-to-date
   document.getElementById('summary-income-expense').textContent = `₱${netProfitToday.toFixed(2)}`;
 }
 
@@ -885,62 +935,176 @@ function updateHomepageSummaries() {
   let timeRecords = [];
   let editingEmployeeId = null;
 
-  function initializePayroll() {
-    // Load data from localStorage
-    if (localStorage.getItem('employees')) {
-      employees = JSON.parse(localStorage.getItem('employees'));
+let inventoryRows = [];  // Store rows in memory for easier handling
+let customCategories = [];
+
+async function initializeInventory() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    // Load inventory rows
+    const docRef = db.collection('users').doc(user.uid).collection('inventory').doc('data');
+    const doc = await docRef.get();
+    if (doc.exists) {
+      inventoryRows = doc.data().rows || [];
+    } else {
+      inventoryRows = [];
     }
-    if (localStorage.getItem('timeRecords')) {
-      timeRecords = JSON.parse(localStorage.getItem('timeRecords')).map(r => ({ ...r, timestamp: new Date(r.timestamp) }));
+
+    // Load custom categories
+    const catDocRef = db.collection('users').doc(user.uid).collection('inventory').doc('customCategories');
+    const catDoc = await catDocRef.get();
+    if (catDoc.exists) {
+      customCategories = catDoc.data().categories || [];
+    } else {
+      customCategories = [];
     }
-
-    updateClock();
-    setInterval(updateClock, 1000);
-    populateEmployeeDropdown();
-    updateEmployeeTable();
-    updateActivityTable();
-    updateDashboardStats();
-    updateTodayStatus();
-
-    const printBtn = document.getElementById('print-payroll-btn');
-    printBtn.disabled = true;
-    printBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
-    // Event listeners
-    document.getElementById('clock-in-btn').addEventListener('click', clockInEmployee);
-    document.getElementById('clock-out-btn').addEventListener('click', clockOutEmployee);
-    document.getElementById('calculate-payroll-btn').addEventListener('click', calculatePayroll);
-    printBtn.addEventListener('click', printPayroll);
-
-    document.getElementById('add-employee-btn').addEventListener('click', () => {
-      document.getElementById('add-employee-modal').classList.remove('hidden');
-    });
-
-    document.getElementById('close-add-modal-btn').addEventListener('click', closeAddEmployeeModal);
-    document.getElementById('cancel-add-btn').addEventListener('click', closeAddEmployeeModal);
-    document.getElementById('save-add-employee-btn').addEventListener('click', saveEmployee);
-
-    document.getElementById('close-edit-modal-btn').addEventListener('click', closeEditEmployeeModal);
-    document.getElementById('cancel-edit-btn').addEventListener('click', closeEditEmployeeModal);
-    document.getElementById('save-edit-employee-btn').addEventListener('click', saveEmployee);
-
-    document.getElementById('employee-select').addEventListener('change', updateTodayStatus);
-
-    // Add event listeners for edit and delete buttons
-    document.querySelectorAll('.edit-employee-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const employeeId = parseInt(this.getAttribute('data-id'));
-        editEmployee(employeeId);
-      });
-    });
-
-    document.querySelectorAll('.delete-employee-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const employeeId = parseInt(this.getAttribute('data-id'));
-        deleteEmployee(employeeId);
-      });
-    });
+  } catch (error) {
+    console.error('Error loading inventory data:', error);
   }
+
+  // Real-time sync for inventory
+  db.collection('users').doc(user.uid).collection('inventory').doc('data').onSnapshot(doc => {
+    if (doc.exists) {
+      inventoryRows = doc.data().rows || [];
+      // Re-render the table (call your existing render logic)
+      renderInventoryTable();  // You'll need to extract table rendering into a function
+    }
+  });
+
+  // Real-time sync for custom categories
+  db.collection('users').doc(user.uid).collection('inventory').doc('customCategories').onSnapshot(doc => {
+    if (doc.exists) {
+      customCategories = doc.data().categories || [];
+      // Re-render categories if needed
+    }
+  });
+
+  // Rest of your initializeInventory code (e.g., set date picker, filter)
+  const today = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('#inventoryTable tbody input[type="date"]').forEach(input => {
+    if (!input.value) input.value = today;
+  });
+
+  const datePicker = document.getElementById('datePicker');
+  if (!datePicker.value) datePicker.value = today;
+  datePicker.addEventListener('change', function() {
+    filterInventoryByDate(this.value);
+  });
+  filterInventoryByDate(datePicker.value);
+
+  // Render the table initially
+  renderInventoryTable();
+}
+
+// New function to render the inventory table from inventoryRows
+function renderInventoryTable() {
+  const tbody = document.querySelector('#inventoryTable tbody');
+  tbody.innerHTML = '';
+  inventoryRows.forEach(rowData => {
+    const newRow = tbody.insertRow();
+    rowData.forEach((cellData, index) => {
+      const cell = newRow.insertCell(index);
+      if (index === 1) {
+        createCategoryCell(cell, cellData.value);
+      } else if (cellData.type === 'date') {
+        cell.innerHTML = `<input type="date" value="${cellData.value}" oninput="saveInventoryData()">`;
+      } else if ([5, 7, 8].includes(index)) {
+        cell.innerHTML = `<input type="text" readonly value="${cellData.value}">`;
+      } else {
+        const inputType = [2, 3, 4, 6].includes(index) ? 'number' : 'text';
+        cell.innerHTML = `<input type="${inputType}" value="${cellData.value}" oninput="if(this.type==='number') calculateInventory(this); saveInventoryData()">`;
+      }
+    });
+    newRow.insertCell(10).innerHTML = `<button class="deleteBtn" onclick="deleteRow(this)">Delete</button>`;
+  });
+  // Recalculate after rendering
+  document.querySelectorAll('#inventoryTable tbody tr').forEach(row => {
+    const quantityStockInput = row.cells[3].querySelector('input');
+    if (quantityStockInput) calculateInventory(quantityStockInput);
+  });
+}
+
+// Update saveInventoryData to save to Firestore
+async function saveInventoryData() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  // Collect current rows from the table
+  const tbody = document.querySelector('#inventoryTable tbody');
+  const rows = [];
+  tbody.querySelectorAll('tr').forEach(row => {
+    const rowData = [];
+    row.querySelectorAll('td').forEach((cell, index) => {
+      if (index < 10) {
+        const input = cell.querySelector('input, select');
+        if (input) {
+          rowData.push({
+            type: input.type || input.tagName.toLowerCase(),
+            value: input.value
+          });
+        }
+      }
+    });
+    rows.push(rowData);
+  });
+  inventoryRows = rows;  // Update in-memory array
+
+  try {
+    await db.collection('users').doc(user.uid).collection('inventory').doc('data').set({ rows });
+  } catch (error) {
+    console.error('Error saving inventory data:', error);
+  }
+}
+
+  // ... rest of your initializePayroll code (updateClock, populateEmployeeDropdown, etc.)
+  updateClock();
+  setInterval(updateClock, 1000);
+  populateEmployeeDropdown();
+  updateEmployeeTable();
+  updateActivityTable();
+  updateDashboardStats();
+  updateTodayStatus();
+
+  const printBtn = document.getElementById('print-payroll-btn');
+  printBtn.disabled = true;
+  printBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+  // Event listeners
+  document.getElementById('clock-in-btn').addEventListener('click', clockInEmployee);
+  document.getElementById('clock-out-btn').addEventListener('click', clockOutEmployee);
+  document.getElementById('calculate-payroll-btn').addEventListener('click', calculatePayroll);
+  printBtn.addEventListener('click', printPayroll);
+
+  document.getElementById('add-employee-btn').addEventListener('click', () => {
+    document.getElementById('add-employee-modal').classList.remove('hidden');
+  });
+
+  document.getElementById('close-add-modal-btn').addEventListener('click', closeAddEmployeeModal);
+  document.getElementById('cancel-add-btn').addEventListener('click', closeAddEmployeeModal);
+  document.getElementById('save-add-employee-btn').addEventListener('click', saveEmployee);
+
+  document.getElementById('close-edit-modal-btn').addEventListener('click', closeEditEmployeeModal);
+  document.getElementById('cancel-edit-btn').addEventListener('click', closeEditEmployeeModal);
+  document.getElementById('save-edit-employee-btn').addEventListener('click', saveEmployee);
+
+  document.getElementById('employee-select').addEventListener('change', updateTodayStatus);
+
+  // Add event listeners for edit and delete buttons
+  document.querySelectorAll('.edit-employee-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const employeeId = parseInt(this.getAttribute('data-id'));
+      editEmployee(employeeId);
+    });
+  });
+
+  document.querySelectorAll('.delete-employee-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const employeeId = parseInt(this.getAttribute('data-id'));
+      deleteEmployee(employeeId);
+    });
+  });
 
  // -- Functions --
             function populateEmployeeDropdown() {
@@ -1366,10 +1530,12 @@ function saveEmployee() {
     const position = document.getElementById(positionId).value.trim();
     const rate = parseFloat(document.getElementById(rateId).value);
 
-    if (!name || !position || isNaN(rate) || rate < 50.00) {
-        alert('Please fill all fields with valid values (minimum wage is PHP 50.00)');
-        return;
-    }
+    const MIN_WAGE = 30.00; // your new minimum wage
+
+    if (!name || !position || isNaN(rate) || rate < MIN_WAGE) {
+    alert(`Please fill all fields with valid values (minimum wage is PHP ${MIN_WAGE.toFixed(2)})`);
+    return;
+  }
 
     if (isEditing) {
         const employee = employees.find(e => e.id === editingEmployeeId);
@@ -1382,6 +1548,11 @@ function saveEmployee() {
         employee.hourlyRate = rate;
         createNotification(`${name} details updated`);
     } else {
+        // Check for duplicate names (case-insensitive)
+        if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) {
+            alert('An employee with this name already exists.');
+            return;
+        }
         const newId = (employees.length > 0) ? Math.max(...employees.map(e => e.id)) + 1 : 1;
         const newEmployee = {
             id: newId,
@@ -1442,13 +1613,19 @@ function createNotification(message) {
     console.log(`Notification: ${message}`);
 }
 
-function saveData() {
-    try {
-        localStorage.setItem('employees', JSON.stringify(employees));
-        localStorage.setItem('timeRecords', JSON.stringify(timeRecords));
-    } catch (e) {
-        console.error('Failed to save data:', e);
-    }
+async function saveData() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    await db.collection('users').doc(user.uid).collection('payroll').doc('data').set({
+      employees,
+      timeRecords
+    });
+  } catch (error) {
+    console.error('Error saving payroll data:', error);
+    alert('Failed to save data. Check your connection.');
+  }
 }
 
 // Inventory-specific variables and functions
@@ -1457,7 +1634,6 @@ const categoryLabels = {
     "Category 1": "Bar",
     "Category 2": "Kitchen"
 };
-let customCategories = [];
 
 function initializeInventory() {
   loadData();
@@ -1516,12 +1692,15 @@ function loadCustomCategories() {
     }
 }
 
-function saveCustomCategories() {
-    try {
-        localStorage.setItem('customCategories', JSON.stringify(customCategories));
-    } catch (e) {
-        console.error('Failed to save custom categories:', e);
-    }
+async function saveCustomCategories() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    await db.collection('users').doc(user.uid).collection('inventory').doc('customCategories').set({ categories: customCategories });
+  } catch (error) {
+    console.error('Error saving custom categories:', error);
+  }
 }
 
 function createCategoryCell(cell, savedValue) {
@@ -1610,7 +1789,13 @@ function onCustomInput(inputElem) {
         createCategoryCell(cell, value);
 
         saveInventoryData();
+    } else if (value === '') {
+        // Reset to select if empty
+        const cell = inputElem.parentElement;
+        cell.innerHTML = '';
+        createCategoryCell(cell, '');
     }
+    saveInventoryData();
 }
 
 function saveInventoryData() {
@@ -1838,25 +2023,20 @@ function addRow() {
     }
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   const lastPage = localStorage.getItem('lastPage') || 'HOME';
   headerTitle.textContent = lastPage;
 
-  // Hide all sections
   Object.values(contentSections).forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
-  // Show saved or home content
   const sectionToShow = contentSections[lastPage] || contentSections['HOME'];
   document.getElementById(sectionToShow).classList.remove('hidden');
 
-  // Initialize any page-specific JS
-  if (lastPage === 'PAYROLL') {
-    initializePayroll();
-  }
-  if (lastPage === 'INVENTORY') {
-    initializeInventory();
-  }
+  // Initialize page-specific JS (now async)
+  if (lastPage === 'PAYROLL') await initializePayroll();
+  if (lastPage === 'INVENTORY') await initializeInventory();
+  if (lastPage === 'INCOME/EXPENSE') await initializeIncomeExpense();
 });
 
 // Cached elements
@@ -1899,9 +2079,6 @@ function addRow() {
       'Others',
     ];
 
-    // Data records storage
-    let records = [];
-
     // localStorage key for records
     const STORAGE_KEY = 'financialRecords';
 
@@ -1943,24 +2120,24 @@ function addRow() {
 
     // Parse date strings into a proper Date object using ISO format
     function parseDateToISO(dateStr) {
-      if (!dateStr) return null;
-      // Attempt ISO first
-      const isoCheck = new Date(dateStr);
-      if (!isNaN(isoCheck.getTime())) return isoCheck;
-
-      // Try to parse common formats - assume MM/DD/YYYY or DD/MM/YYYY (here: assume MM/DD/YYYY)
-      const parts = dateStr.split(/[\/\-]/);
-      if (parts.length === 3) {
-        // Note: This assumes MM/DD/YYYY format by default
-        const iso = `${parts[2].padStart(4, '0')}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-        const dateObj = new Date(iso);
-        if (!isNaN(dateObj.getTime())) return dateObj;
-      }
-      // Fallback: native parse
-      const fallback = new Date(dateStr);
-      if (!isNaN(fallback.getTime())) return fallback;
-      return null;
+  if (!dateStr) return null;
+  // Try ISO format first
+  let date = new Date(dateStr);
+  if (!isNaN(date.getTime())) return date;
+  // Fallback: Assume YYYY-MM-DD or MM/DD/YYYY
+  const parts = dateStr.split(/[\/\-]/);
+  if (parts.length === 3) {
+    // Check if first part is year (4 digits)
+    if (parts[0].length === 4) {
+      date = new Date(`${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`);
+    } else {
+      // Assume MM/DD/YYYY
+      date = new Date(`${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`);
     }
+    if (!isNaN(date.getTime())) return date;
+  }
+  return null;
+}
 
     // Check if recordDate is in filter period specified by filterDate and period
     function isDateInPeriod(recordDate, filterDate, period) {
@@ -2325,16 +2502,59 @@ function addRow() {
   return incomeTotal - expenseTotal;
 }
 
-    function initializeIncomeExpense() {
-  loadRecords();
+let records = [];
+
+async function initializeIncomeExpense() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    const docRef = db.collection('users').doc(user.uid).collection('incomeExpense').doc('data');
+    const doc = await docRef.get();
+    if (doc.exists) {
+      records = doc.data().records || [];
+    } else {
+      records = [];
+    }
+  } catch (error) {
+    console.error('Error loading income/expense data:', error);
+  }
+
+  // Real-time sync
+  db.collection('users').doc(user.uid).collection('incomeExpense').doc('data').onSnapshot(doc => {
+    if (doc.exists) {
+      records = doc.data().records || [];
+      renderRecords();  // Re-render the table
+    }
+  });
+
+  // Rest of your initializeIncomeExpense code
   const todayISO = new Date().toISOString().slice(0, 10);
   dateSelect.value = todayISO;
   yearSelect.value = new Date().getFullYear();
-  monthSelect.value = '1'; // January
+  monthSelect.value = '1';
 
   updateInputsBasedOnPeriod();
   updateCategoryOptions();
   renderRecords();
+}
+
+// Update saveRecords to save to Firestore
+async function saveRecords() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    await db.collection('users').doc(user.uid).collection('incomeExpense').doc('data').set({ records });
+  } catch (error) {
+    console.error('Error saving income/expense data:', error);
+    alert('Failed to save records. Check your connection.');
+  }
+}
+
+// Update loadRecords (no longer needed)
+function loadRecords() {
+  // Handled in initializeIncomeExpense
 }
 </script>
 </body>

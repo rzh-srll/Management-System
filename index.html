@@ -35,13 +35,28 @@
 
     // Example: Function to add data (call this from your JS)
     window.addDataToDB = function(userId, username, email) {
-    alert(`Test: Adding user ${username} (${email}) to localStorage`);
-    // Simulate adding to localStorage
-    let users = JSON.parse(localStorage.getItem('testUsers') || '[]');
-    users.push({ userId, username, email });
-    localStorage.setItem('testUsers', JSON.stringify(users));
-    console.log('Added to localStorage:', users);
-  };
+  alert(`Test: Adding user ${username} (${email})`);
+  
+  // Save locally for testing (optional)
+  let users = JSON.parse(localStorage.getItem('testUsers') || '[]');
+  users.push({ userId, username, email });
+  localStorage.setItem('testUsers', JSON.stringify(users));
+  console.log('Added to localStorage:', users);
+
+  // Write to Firebase Realtime Database
+  set(ref(db, 'users/' + userId), {
+    username: username,
+    email: email
+  })
+  .then(() => {
+    console.log('Data added successfully to Firebase!');
+    alert('Data added successfully to Firebase!');
+  })
+  .catch((error) => {
+    console.error('Error writing to database:', error);
+    alert(`Firebase error: ${error.message}`);
+  });
+};
   </script>
 
   <!-- Rest of your styles... -->
@@ -2414,3 +2429,4 @@ function addRow() {
 </script>
 </body>
 </html>
+

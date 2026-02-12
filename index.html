@@ -2400,18 +2400,20 @@ function addRow() {
     initialize();
 
     function getIncomeExpenseTodayNetProfit() {
-      // Assuming "records" holds your income/expense data array
-      const todayStr = new Date().toISOString().slice(0, 10);
-      let incomeTotal = 0;
-      let expenseTotal = 0;
+    // Assuming "records" holds your income/expense data array
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let incomeTotal = 0;
+    let expenseTotal = 0;
 
       records.forEach(r => {
         if (r.date === todayStr) {
           if (r.type === 'income') incomeTotal += r.amount || 0;
           else if (r.type === 'expense') expenseTotal += r.amount || 0;
+        }
       });
       return incomeTotal - expenseTotal;
     }
+
 
     function initializeIncomeExpense() {
       loadRecords();

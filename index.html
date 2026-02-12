@@ -12,52 +12,48 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
   <!-- Firebase SDK CDN -->
-  <script type="module">
-    import { initializeApp } from "firebase/app";
-    import { getAnalytics } from "firebase/analytics";
-    import { getDatabase, ref, set } from "firebase/database";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-    // Paste your Firebase config here (with real values from Firebase Console)
-    const firebaseConfig = {
-    apiKey: "AIzaSyAbOsWRt7Z_sA6UysifArV90D1kElkN4ao",
-    authDomain: "eommamanagementsystem.firebaseapp.com",
-    projectId: "eommamanagementsystem",
-    storageBucket: "eommamanagementsystem.firebasestorage.app",
-    messagingSenderId: "303667632445",
-    appId: "1:303667632445:web:fb8eef83cee494aacf8d54",
-    measurementId: "G-JNS8ECVM8Z"
-  };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getDatabase(app);
-
-    // Example: Function to add data (call this from your JS)
-    window.addDataToDB = function(userId, username, email) {
-  alert(`Test: Adding user ${username} (${email})`);
-  
-  // Save locally for testing (optional)
-  let users = JSON.parse(localStorage.getItem('testUsers') || '[]');
-  users.push({ userId, username, email });
-  localStorage.setItem('testUsers', JSON.stringify(users));
-  console.log('Added to localStorage:', users);
-
-  // Write to Firebase Realtime Database
-  set(ref(db, 'users/' + userId), {
-    username: username,
-    email: email
-  })
-  .then(() => {
-    console.log('Data added successfully to Firebase!');
-    alert('Data added successfully to Firebase!');
-  })
-  .catch((error) => {
-    console.error('Error writing to database:', error);
-    alert(`Firebase error: ${error.message}`);
-  });
+  const firebaseConfig = {
+  apiKey: "AIzaSyAbOsWRt7Z_sA6UysifArV90D1kElkN4ao",
+  authDomain: "eommamanagementsystem.firebaseapp.com",
+  projectId: "eommamanagementsystem",
+  storageBucket: "eommamanagementsystem.firebasestorage.app",
+  messagingSenderId: "303667632445",
+  appId: "1:303667632445:web:fb8eef83cee494aacf8d54",
+  measurementId: "G-JNS8ECVM8Z"
 };
-  </script>
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getDatabase(app);
+
+  // Function to add a test user to Firebase and localStorage
+  window.addDataToDB = function(userId, username, email) {
+    alert(`Test: Adding user ${username} (${email})`);
+
+    // LocalStorage for debug
+    let users = JSON.parse(localStorage.getItem('testUsers') || '[]');
+    users.push({ userId, username, email });
+    localStorage.setItem('testUsers', JSON.stringify(users));
+    console.log('Added to localStorage:', users);
+
+    // Write to Firebase Realtime Database
+    set(ref(db, 'users/' + userId), {
+      username: username,
+      email: email
+    }).then(() => {
+      console.log('Data added successfully to Firebase!');
+      alert('Data added successfully to Firebase!');
+    }).catch((error) => {
+      console.error('Error writing to database:', error);
+      alert('Firebase error: ' + error.message);
+    });
+  };
+</script>
 
   <!-- Rest of your styles... -->
 </head>
@@ -2429,4 +2425,3 @@ function addRow() {
 </script>
 </body>
 </html>
-

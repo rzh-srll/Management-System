@@ -33,17 +33,10 @@
   const analytics = getAnalytics(app);
   const db = getDatabase(app);
 
-  // Example: Function to add data (call this from your JS)
   window.addDataToDB = function(userId, username, email) {
-    set(ref(db, 'users/' + userId), {
-      username: username,
-      email: email
-    }).then(() => {
-      console.log('Data added successfully!');
-    }).catch((error) => {
-      console.error('Error:', error);
-    });
-  };
+  alert(`Adding user: ${username} (${email})`);
+  // Later, swap back to Firebase code
+};
 
 </script>
 
@@ -2414,3 +2407,4 @@ function addRow() {
 </script>
 </body>
 </html>
+
